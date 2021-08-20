@@ -195,11 +195,11 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
    * @param {*} textureInfo - Is filled with information for tracking the texture
    */
   createOrUpdateFloat32TextureBuffer(buffer, textureInfo = {texture:undefined, size:0, bufferWidth:1024}, firstChange = -1,lastChange= -1) {
-    // this.activeTexture(this.TEXTURE2);
-    if (buffer.length % 4096 !== 0) {
-      console.error('createOrUpdateFloat32TextureBuffer needs a multiple of 4096 as bufferSize!')
-    }
     let width = textureInfo.bufferWidth || 1024;
+    // this.activeTexture(this.TEXTURE2);
+    if (buffer.length % (4 * width) !== 0) {
+      console.error('createOrUpdateFloat32TextureBuffer needs a multiple of '+ ~~(width * 4) +' as bufferSize!')
+    }
 
     let size = buffer.length / 4;
     let w = width;
