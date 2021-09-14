@@ -41,7 +41,7 @@ const uniformSetters = new (function() {
 export class RenderingContextWithUtils extends WebGL2RenderingContext {
 
   updateCanvasSize(canvas) {
-    let dpr = devicePixelRatio;
+    let dpr = 1;//devicePixelRatio;
     let w = canvas.offsetWidth * dpr;
     let h = canvas.offsetHeight * dpr;
     if (w !== canvas.width ||
