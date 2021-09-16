@@ -41,7 +41,7 @@ const uniformSetters = new (function() {
 export class RenderingContextWithUtils extends WebGL2RenderingContext {
 
   updateCanvasSize(canvas) {
-    let dpr = 1;//devicePixelRatio;
+    let dpr = devicePixelRatio;
     let w = canvas.offsetWidth * dpr;
     let h = canvas.offsetHeight * dpr;
     if (w !== canvas.width ||
@@ -52,6 +52,21 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
 
     return { w, h, dpr };
   }
+
+  checkUpdateShader(obj, vertStr, fragStr) {
+    if ((vertStr !== obj.lastVertStr) ||
+        (fragStr !== obj.lastFragStr)) {
+      obj.shader = this.getShaderProgram(
+        vertStr,
+        fragStr,
+        2);
+      console.log('Shader reloaded');
+      obj.lastVertStr = vertStr;
+      obj.lastFragStr = fragStr;
+    }
+    return obj.shader;
+  }
+
 
   getShader(str, shaderType, webGLVer) {
     const sdr = this.createShader(shaderType);
