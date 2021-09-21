@@ -2,6 +2,10 @@
 // Licensed under CC BY-NC-SA 
 // https://creativecommons.org/licenses/by-nc-sa/4.0/
 
+let retinaDisabled = false
+export function disableRetina(val) {
+  retinaDisabled = val;
+}
 const uniformSetters = new (function() {
   const t = this;
   t.f = function(fnc, UL, gl) {
@@ -42,6 +46,9 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
 
   updateCanvasSize(canvas) {
     let dpr = devicePixelRatio;
+    if (retinaDisabled) {
+      dpr = Math.min(dpr, 1);
+    }
     let w = canvas.offsetWidth * dpr;
     let h = canvas.offsetHeight * dpr;
     if (w !== canvas.width ||
