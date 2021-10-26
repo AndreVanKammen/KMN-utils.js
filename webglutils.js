@@ -42,7 +42,26 @@ const uniformSetters = new (function() {
  * @typedef {WebGLProgram & {u:any,a:any}} WebGLProgramExt
  */
 
+let cachedShaders = {};
 export class RenderingContextWithUtils extends WebGL2RenderingContext {
+
+  checkUpdateShader(shaderId, vertStr, fragStr) {
+    let shader = cachedShaders[shaderId];
+    if (!shader ||
+        (vertStr !== shader.lastVertStr) ||
+        (fragStr !== shader.lastFragStr)) {
+      shader = this.getShaderProgram(
+        vertStr,
+        fragStr,
+        2);
+      console.log('Shader loaded: ',shaderId);
+      shader.lastVertStr = vertStr;
+      shader.lastFragStr = fragStr;
+      cachedShaders[shaderId] = shader;
+    }
+    return shader;
+  }
+
 
   updateCanvasSize(canvas) {
     let dpr = devicePixelRatio;
@@ -58,20 +77,6 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
     }
 
     return { w, h, dpr };
-  }
-
-  checkUpdateShader(obj, vertStr, fragStr) {
-    if ((vertStr !== obj.lastVertStr) ||
-        (fragStr !== obj.lastFragStr)) {
-      obj.shader = this.getShaderProgram(
-        vertStr,
-        fragStr,
-        2);
-      console.log('Shader reloaded');
-      obj.lastVertStr = vertStr;
-      obj.lastFragStr = fragStr;
-    }
-    return obj.shader;
   }
 
 
