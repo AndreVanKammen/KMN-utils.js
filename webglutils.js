@@ -38,10 +38,31 @@ const uniformSetters = new (function() {
   t[0x1406] = t.f.bind(t, "1f");
 })();
 
+
+
 /**
- * @typedef {WebGLProgram & {u:any,a:any}} WebGLProgramExt
+ * @typedef {WebGLProgram & {u:any,a:any}} WebGLProgramExtOld
  */
 
+/**
+ * @typedef {{
+ *   set: (x:number, y?:number, z?:number, w?:number) => {},
+ *   en: () => void,
+ *   dis: () => void
+ * }} UniformSetter
+ */
+
+class WebGLProgramExt {
+  /** @type {Record<string, UniformSetter>} */
+  u;
+  /** @type {Record<string, UniformSetter>} */
+  a;
+  lastVertStr = '';
+  lastFragStr = '';
+}
+
+/** @type {Record<string,WebGLProgramExt>} */
+let webGLPrograms = {};
 export class RenderingContextWithUtils extends WebGL2RenderingContext {
 
   updateCanvasSize(canvas) {
@@ -60,20 +81,29 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
     return { w, h, dpr };
   }
 
-  checkUpdateShader(obj, vertStr, fragStr) {
-    if ((vertStr !== obj.lastVertStr) ||
-        (fragStr !== obj.lastFragStr)) {
-      obj.shader = this.getShaderProgram(
+  /**
+   * 
+   * @param {string} shaderId 
+   * @param {string} vertStr 
+   * @param {string} fragStr 
+   * @returns {WebGLProgramExt}
+   */
+  checkUpdateShader(shaderId, vertStr, fragStr) {
+    let shader = webGLPrograms[shaderId];
+    if (!shader ||
+        (vertStr !== shader.lastVertStr) ||
+        (fragStr !== shader.lastFragStr)) {
+      shader = this.getShaderProgram(
         vertStr,
         fragStr,
         2);
-      console.log('Shader reloaded');
-      obj.lastVertStr = vertStr;
-      obj.lastFragStr = fragStr;
+      console.log('Shader loaded: ', shaderId);
+      shader.lastVertStr = vertStr;
+      shader.lastFragStr = fragStr;
+      webGLPrograms[shaderId] = shader;
     }
-    return obj.shader;
+    return shader;
   }
-
 
   getShader(str, shaderType, webGLVer) {
     const sdr = this.createShader(shaderType);
