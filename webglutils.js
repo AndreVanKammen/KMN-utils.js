@@ -65,22 +65,6 @@ class WebGLProgramExt {
 let webGLPrograms = {};
 export class RenderingContextWithUtils extends WebGL2RenderingContext {
 
-  updateCanvasSize(canvas) {
-    let dpr = devicePixelRatio;
-    if (retinaDisabled) {
-      dpr = Math.min(dpr, 1);
-    }
-    let w = canvas.offsetWidth * dpr;
-    let h = canvas.offsetHeight * dpr;
-    if (w !== canvas.width ||
-        h !== canvas.height) {
-      canvas.width = w;
-      canvas.height = h;
-    }
-
-    return { w, h, dpr };
-  }
-
   /**
    * 
    * @param {string} shaderId 
@@ -88,7 +72,7 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
    * @param {string} fragStr 
    * @returns {WebGLProgramExt}
    */
-  checkUpdateShader(shaderId, vertStr, fragStr) {
+   checkUpdateShader(shaderId, vertStr, fragStr) {
     let shader = webGLPrograms[shaderId];
     if (!shader ||
         (vertStr !== shader.lastVertStr) ||
@@ -103,6 +87,22 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
       webGLPrograms[shaderId] = shader;
     }
     return shader;
+  }
+
+  updateCanvasSize(canvas) {
+    let dpr = devicePixelRatio;
+    if (retinaDisabled) {
+      dpr = Math.min(dpr, 1);
+    }
+    let w = canvas.offsetWidth * dpr;
+    let h = canvas.offsetHeight * dpr;
+    if (w !== canvas.width ||
+        h !== canvas.height) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+
+    return { w, h, dpr };
   }
 
   getShader(str, shaderType, webGLVer) {
