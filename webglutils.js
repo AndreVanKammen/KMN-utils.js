@@ -105,6 +105,34 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
     return { w, h, dpr };
   }
 
+  updateShaderAndSize(obj, shader, parentElement) {
+    // TODO: This needs to be cleared after every frame!
+    if (parentElement.dataShader !== shader) {
+      parentElement.dataShader = shader
+
+      let { w, h, dpr } = this.updateCanvasSize(this.canvas);
+      let rect = parentElement.getBoundingClientRect();
+      if (rect.width && rect.height) {
+        this.viewport(rect.x * dpr, h - (rect.y + rect.height) * dpr, rect.width * dpr, rect.height * dpr);
+        obj.width = w = rect.width * dpr;
+        obj.height = h = rect.height * dpr;
+
+        this.bindFramebuffer(this.FRAMEBUFFER, null);
+        this.useProgram(shader);
+
+        shader.u.windowSize?.set(w, h);
+        shader.u.dpr?.set(dpr);
+      }
+      parentElement.dataShaderSize = { w, h };
+      return w > 0 && h > 0;
+    } else {
+      let size = parentElement.dataShaderSize;
+      obj.width = size.w;
+      obj.height = size.h;
+      return size.w > 0 && size.h > 0;
+    }
+  }
+
   getShader(str, shaderType, webGLVer) {
     const sdr = this.createShader(shaderType);
     if (~~webGLVer === 2) {      
