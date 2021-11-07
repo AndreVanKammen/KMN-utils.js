@@ -31,7 +31,7 @@ function handleDefers() {
 function defer(callback) {
   callbacks.push(callback);
   if (timerHandle<0) {
-    timerHandle = window.setTimeout(handleDefers, 0);
+    timerHandle = globalThis.setTimeout(handleDefers, 0);
   }
 }
 
