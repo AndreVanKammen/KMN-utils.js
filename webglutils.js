@@ -52,7 +52,7 @@ const uniformSetters = new (function() {
  * }} UniformSetter
  */
 
-class WebGLProgramExt {
+export class WebGLProgramExt {
   /** @type {Record<string, UniformSetter>} */
   u;
   /** @type {Record<string, UniformSetter>} */
