@@ -146,9 +146,13 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
         this.getShaderInfoLog(sdr)
       );
       console.log(this.getShaderInfoLog(sdr));
+      let lines = str.split("\n");
+      let lineNr = ~~m[1] - 1;
       console.log(
         'shadererror "[' + m[1] +
-          ']"\r\n' + str.split("\n")[~~m[1] - 1] +
+          ']\r\n   ' + lines[lineNr-1] +
+          '\r\n>>>' + lines[lineNr] +
+          '\r\n   ' + lines[lineNr+1] +
           "\r\n" + m[2]
       );
     }
