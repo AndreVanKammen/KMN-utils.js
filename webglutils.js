@@ -6,6 +6,8 @@ let retinaDisabled = false
 export function disableRetina(val) {
   retinaDisabled = val;
 }
+let vertexIDWorkaroundBuffer = null;
+
 const uniformSetters = new (function() {
   const t = this;
   t.f = function(fnc, UL, gl) {
@@ -220,6 +222,12 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
           gl.vertexAttribPointer(AL, size, gl.FLOAT, false, 0, 0);
         };
       })(this, attribLoc);
+      shaderProgram.a[attribInfo.name].seti = (function(gl, AL) {
+        return function(buffer, size) {
+          gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+          gl.vertexAttribPointer(AL, size, gl.INT, false, 0, 0);
+        };
+      })(this, attribLoc);
       shaderProgram.a[attribInfo.name].en = (function(gl, AL) {
         return function() {
           gl.enableVertexAttribArray(AL);
@@ -342,6 +350,22 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
     }
     return b;
   }
+  updateOrCreateInt32Array(b, data) {
+    const doCreate = !b
+    if (doCreate) {
+      b = this.createBuffer()
+    }
+    if (!(data instanceof Int32Array)) {
+      data = new Int32Array(data)
+    }
+    this.bindBuffer(this.ARRAY_BUFFER, b)
+    if (doCreate) { 
+      this.bufferData(this.ARRAY_BUFFER, data, this.DYNAMIC_DRAW) 
+    } else { 
+      this.bufferSubData(this.ARRAY_BUFFER, 0, data) 
+    }
+    return b
+  }
   updateOrCreateUInt32ElementArray(b, data) {
     const doCreate = !b
     if (doCreate) {
@@ -370,6 +394,25 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
       this.STATIC_DRAW
     );
     return b;
+  }
+  /**
+   * Makes an int array GL buffer with 1,2,3, etc because Vertex_ID is unstable on Mac (Retina 5K, Late 2015) AMD Radeon R9 M395X 4 GB
+   * I use this as a vertex buffer to circumvent that problem
+   * @returns {WebGLBuffer} 
+   */
+  getVertex_IDWorkaroundBuffer() {
+    if (!vertexIDWorkaroundBuffer) {
+      const maxVertexID = 1024 * 256;
+      let data = new Float32Array(maxVertexID); // Can't get Int to work on my mac :( Vertex shader input type does not match the type of the bound vertex attribute. int
+  
+      for (let ix = 0; ix < maxVertexID; ix++) {
+        data[ix] = ix;
+      }
+      vertexIDWorkaroundBuffer = this.createBuffer();
+      this.bindBuffer(this.ARRAY_BUFFER, vertexIDWorkaroundBuffer)
+      this.bufferData(this.ARRAY_BUFFER, data, this.STATIC_READ);
+    }
+    return vertexIDWorkaroundBuffer;
   }
   loadCanvas(canvas, texNum) {
     const gl = this;
