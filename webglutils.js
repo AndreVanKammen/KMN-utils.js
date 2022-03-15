@@ -8,6 +8,16 @@ export function disableRetina(val) {
 }
 let vertexIDWorkaroundBuffer = null;
 
+const shaderOptions = {
+  vertexIDDisabled: false
+}
+export function disableVertexID(val) {
+  shaderOptions.vertexIDDisabled = val;
+}
+export function getVertexIDDiabled(val) {
+  return shaderOptions.vertexIDDisabled;
+}
+
 const uniformSetters = new (function() {
   const t = this;
   t.f = function(fnc, UL, gl) {
@@ -76,6 +86,32 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
    */
    checkUpdateShader(shaderId, vertStr, fragStr) {
     let shader = webGLPrograms[shaderId];
+    if (!shader ||
+        (vertStr !== shader.lastVertStr) ||
+        (fragStr !== shader.lastFragStr)) {
+      shader = this.getShaderProgram(
+        vertStr,
+        fragStr,
+        2);
+      console.log('Shader loaded: ', shaderId);
+      shader.lastVertStr = vertStr;
+      shader.lastFragStr = fragStr;
+      webGLPrograms[shaderId] = shader;
+    }
+    return shader;
+  }
+
+  /**
+   * 
+   * @param {string} shaderId 
+   * @param {(options)=>String} vertFunc 
+   * @param {(options)=>String} fragFunc 
+   * @returns {WebGLProgramExt}
+   */
+   checkUpdateShader2(shaderId, vertFunc, fragFunc) {
+     let shader = webGLPrograms[shaderId];
+     let vertStr = vertFunc(shaderOptions);
+     let fragStr = fragFunc(shaderOptions);
     if (!shader ||
         (vertStr !== shader.lastVertStr) ||
         (fragStr !== shader.lastFragStr)) {
@@ -402,7 +438,7 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
    */
   getVertex_IDWorkaroundBuffer() {
     if (!vertexIDWorkaroundBuffer) {
-      const maxVertexID = 1024 * 256;
+      const maxVertexID = 1024 * 1024 * 4;
       let data = new Float32Array(maxVertexID); // Can't get Int to work on my mac :( Vertex shader input type does not match the type of the bound vertex attribute. int
   
       for (let ix = 0; ix < maxVertexID; ix++) {
