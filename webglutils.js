@@ -552,10 +552,10 @@ function AddUtilsToContext(ctx) {
 /**
  * Get's a webgl(2) context extended with utilities
  * @param {HTMLCanvasElement} canvas 
- * @param {any} options 
+ * @param {WebGLContextAttributes} options 
  * @returns {RenderingContextWithUtils}
  */
-export default function getWebGLContext(canvas, options) {
+export default function getWebGLContext(canvas, options = null) {
   const opt = options || { alpha: false };
   let glCtx;
   const contextNames = [
