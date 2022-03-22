@@ -8,7 +8,7 @@ export function disableRetina(val) {
 }
 let vertexIDWorkaroundBuffer = null;
 
-const shaderOptions = {
+export const shaderOptions = {
   vertexIDDisabled: false
 }
 export function disableVertexID(val) {
