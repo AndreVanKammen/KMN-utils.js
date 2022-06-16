@@ -30,7 +30,8 @@ function handleDefers() {
 
 function defer(callback) {
   callbacks.push(callback);
-  if (timerHandle<0) {
+  if (timerHandle < 0) {
+    // @ts-ignore STFU yes it is
     timerHandle = globalThis.setTimeout(handleDefers, 0);
   }
 }
