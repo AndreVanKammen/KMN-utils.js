@@ -7,6 +7,8 @@ export function disableRetina(val) {
   retinaDisabled = val;
 }
 let vertexIDWorkaroundBuffer = null;
+let currentShader = null;
+let currentClipElement = null;
 
 export const shaderOptions = {
   vertexIDDisabled: false
@@ -143,12 +145,14 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
     return { w, h, dpr };
   }
 
-  updateShaderAndSize(obj, shader, parentElement) {
+  updateShaderAndSize(obj, shader, parentElement, clipElement = null) {
     // TODO: This needs to be cleared after every frame!
-    if (parentElement.dataShader !== shader) {
-      parentElement.dataShader = shader
+    if (currentShader !== shader || clipElement !== currentClipElement) {
+      currentShader = shader;
+      currentClipElement = clipElement;
 
       let { w, h, dpr } = this.updateCanvasSize(this.canvas);
+      let ch = h;
       let rect = parentElement.getBoundingClientRect();
       if (rect.width && rect.height) {
         this.viewport(rect.x * dpr, h - (rect.y + rect.height) * dpr, rect.width * dpr, rect.height * dpr);
@@ -161,6 +165,18 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
         shader.u.windowSize?.set(w, h);
         shader.u.dpr?.set(dpr);
       }
+
+      if (clipElement) {
+        let clipRect = clipElement.getBoundingClientRect();
+        this.scissor(clipRect.x * dpr,
+          ch - (clipRect.y + clipElement.clientHeight) * dpr,
+          clipElement.clientWidth * dpr,
+          clipElement.clientHeight * dpr);
+        this.enable(this.SCISSOR_TEST);
+      } else {
+        this.disable(this.SCISSOR_TEST);
+      }
+  
       parentElement.dataShaderSize = { w, h };
       return w > 0 && h > 0;
     } else {
