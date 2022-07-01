@@ -8,6 +8,7 @@ export function disableRetina(val) {
 }
 let vertexIDWorkaroundBuffer = null;
 let currentShader = null;
+let ignoreClipRect = false;
 let currentClipElement = null;
 
 export const shaderOptions = {
@@ -145,9 +146,13 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
     return { w, h, dpr };
   }
 
+  setIgnoreClipRect(value) {
+    ignoreClipRect = value;
+  }
+
   updateShaderAndSize(obj, shader, parentElement, clipElement = null) {
     // TODO: This needs to be cleared after every frame!
-    if (currentShader !== shader || clipElement !== currentClipElement) {
+    if (currentShader !== shader || (clipElement !== currentClipElement && !ignoreClipRect)) {
       currentShader = shader;
       currentClipElement = clipElement;
 
@@ -166,15 +171,17 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
         shader.u.dpr?.set(dpr);
       }
 
-      if (clipElement) {
-        let clipRect = clipElement.getBoundingClientRect();
-        this.scissor(clipRect.x * dpr,
-          ch - (clipRect.y + clipElement.clientHeight) * dpr,
-          clipElement.clientWidth * dpr,
-          clipElement.clientHeight * dpr);
-        this.enable(this.SCISSOR_TEST);
-      } else {
-        this.disable(this.SCISSOR_TEST);
+      if (!ignoreClipRect) {
+        if (clipElement) {
+          let clipRect = clipElement.getBoundingClientRect();
+          this.scissor(clipRect.x * dpr,
+            ch - (clipRect.y + clipElement.clientHeight) * dpr,
+            clipElement.clientWidth * dpr,
+            clipElement.clientHeight * dpr);
+          this.enable(this.SCISSOR_TEST);
+        } else {
+          this.disable(this.SCISSOR_TEST);
+        }
       }
   
       parentElement.dataShaderSize = { w, h };
