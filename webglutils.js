@@ -8,6 +8,9 @@ export function disableRetina(val) {
 }
 let vertexIDWorkaroundBuffer = null;
 let currentShader = null;
+let currentShaderSize = {
+  w: 1024, h: 512
+}
 let ignoreClipRect = false;
 let currentClipElement = null;
 
@@ -152,7 +155,7 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
 
   updateShaderAndSize(obj, shader, parentElement, clipElement = null) {
     // TODO: This needs to be cleared after every frame!
-    if (currentShader !== shader || (clipElement !== currentClipElement && !ignoreClipRect)) {
+    if (true) { //currentShader !== shader || (clipElement !== currentClipElement && !ignoreClipRect)) {
       currentShader = shader;
       currentClipElement = clipElement;
 
@@ -184,10 +187,10 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
         }
       }
   
-      parentElement.dataShaderSize = { w, h };
+      currentShaderSize = { w, h };
       return w > 0 && h > 0;
     } else {
-      let size = parentElement.dataShaderSize;
+      let size = currentShaderSize;
       obj.width = size.w;
       obj.height = size.h;
       return size.w > 0 && size.h > 0;
