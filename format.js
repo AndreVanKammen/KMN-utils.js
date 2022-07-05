@@ -15,8 +15,8 @@ export function secondsToTimeStr(seconds) {
   }
   
   if (sign === -1) {
-    return '-' + timeString.substr(ix);
+    return '-' + timeString.substring(ix);
   } else {
-    return timeString.substr(ix);
+    return timeString.substring(ix);
   }
 }
