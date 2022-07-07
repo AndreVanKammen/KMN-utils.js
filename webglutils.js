@@ -14,6 +14,8 @@ let currentShaderSize = {
 let ignoreClipRect = false;
 let currentClipElement = null;
 
+const defaultTextureInfo = { texture: undefined, size: 0, bufferWidth: 1024 };
+
 export const shaderOptions = {
   vertexIDDisabled: false
 }
@@ -342,13 +344,28 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
     this.texParameteri(target, this.TEXTURE_WRAP_S, this.CLAMP_TO_EDGE);
     this.texParameteri(target, this.TEXTURE_WRAP_T, this.CLAMP_TO_EDGE);
   }
+
+  /**
+   * 
+   * @param {Float32Array} buffer - The buffer to create the texture with
+   * @param {typeof defaultTextureInfo} textureInfo - Is filled with information for tracking the texture
+   */
+  deleteFloat32TextureBuffer(buffer, textureInfo = { ...defaultTextureInfo }) {
+    if (textureInfo.texture) {
+      this.deleteTexture(textureInfo.texture);
+    }
+    if (buffer) {
+      // Can't dispose float32buffer, it's owne bij our caller anyway
+      buffer = null;
+    }
+  }
   /**
    * This functions needs buffers with a size that is a multiple of 4096
    * TODO: Refactor for other sizes and partial update
    * @param {Float32Array} buffer - The buffer to create the texture with
-   * @param {*} textureInfo - Is filled with information for tracking the texture
+   * @param {typeof defaultTextureInfo} textureInfo - Is filled with information for tracking the texture
    */
-  createOrUpdateFloat32TextureBuffer(buffer, textureInfo = {texture:undefined, size:0, bufferWidth:1024}, firstChange = -1,lastChange= -1) {
+  createOrUpdateFloat32TextureBuffer(buffer, textureInfo = { ...defaultTextureInfo }, firstChange = -1,lastChange= -1) {
     let width = textureInfo.bufferWidth || 1024;
     // this.activeTexture(this.TEXTURE2);
     if (buffer.length % (4 * width) !== 0) {
