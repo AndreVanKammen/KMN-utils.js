@@ -20,3 +20,14 @@ export function secondsToTimeStr(seconds) {
     return timeString.substring(ix);
   }
 }
+
+export function byteLengthToStr(len) {
+  let units = ['bytes','KB','MB','GB','TB','PB','EB'];
+  let unitIx = 0; // Alternative: Math.floor(Math.log(len)*(1.0/Math.log(1024)))
+  while (len >= 1000 && unitIx < units.length-1) {
+    len /= 1024;
+    unitIx++;
+  }
+  return len.toLocaleString(undefined, { maximumFractionDigits: 1 }) + units[unitIx];
+}
+
