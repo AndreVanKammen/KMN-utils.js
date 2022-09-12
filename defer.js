@@ -17,7 +17,7 @@ export function setDeferMethod(newDeferMethod) {
   deferMethod = newDeferMethod;
 }
 
-function handleDefers() {
+export function handleDefers() {
   // Clean global state for next run
   timerHandle = -1;
   const cbs = callbacks;
