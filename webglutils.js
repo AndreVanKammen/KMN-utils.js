@@ -1,30 +1,8 @@
 // Copyright by André van Kammen
-// Licensed under CC BY-NC-SA 
+// Licensed under CC BY-NC-SA
 // https://creativecommons.org/licenses/by-nc-sa/4.0/
 
-let retinaDisabled = false
-export function disableRetina(val) {
-  retinaDisabled = val;
-}
-let vertexIDWorkaroundBuffer = null;
-let currentShader = null;
-let currentShaderSize = {
-  w: 1024, h: 512
-}
-let ignoreClipRect = false;
-let currentClipElement = null;
-
 const defaultTextureInfo = { texture: undefined, size: 0, bufferWidth: 1024 };
-
-export const shaderOptions = {
-  vertexIDDisabled: false
-}
-export function disableVertexID(val) {
-  shaderOptions.vertexIDDisabled = val;
-}
-export function getVertexIDDiabled(val) {
-  return shaderOptions.vertexIDDisabled;
-}
 
 const uniformSetters = new (function() {
   const t = this;
@@ -80,138 +58,22 @@ export class WebGLProgramExt {
   lastVertStr = '';
   lastFragStr = '';
 }
-
-/** @type {Record<string,WebGLProgramExt>} */
-let webGLPrograms = {};
 export class RenderingContextWithUtils extends WebGL2RenderingContext {
 
-  /**
-   * 
-   * @param {string} shaderId 
-   * @param {string} vertStr 
-   * @param {string} fragStr 
-   * @returns {WebGLProgramExt}
-   */
-   checkUpdateShader(shaderId, vertStr, fragStr) {
-    let shader = webGLPrograms[shaderId];
-    if (!shader ||
-        (vertStr !== shader.lastVertStr) ||
-        (fragStr !== shader.lastFragStr)) {
-      shader = this.getShaderProgram(
-        vertStr,
-        fragStr,
-        2);
-      console.log('Shader loaded: ', shaderId);
-      shader.lastVertStr = vertStr;
-      shader.lastFragStr = fragStr;
-      webGLPrograms[shaderId] = shader;
-    }
-    return shader;
-  }
-
-  /**
-   * 
-   * @param {string} shaderId 
-   * @param {(options)=>String} vertFunc 
-   * @param {(options)=>String} fragFunc 
-   * @returns {WebGLProgramExt}
-   */
-   checkUpdateShader2(shaderId, vertFunc, fragFunc) {
-     let shader = webGLPrograms[shaderId];
-     let vertStr = vertFunc(shaderOptions);
-     let fragStr = fragFunc(shaderOptions);
-    if (!shader ||
-        (vertStr !== shader.lastVertStr) ||
-        (fragStr !== shader.lastFragStr)) {
-      shader = this.getShaderProgram(
-        vertStr,
-        fragStr,
-        2);
-      console.log('Shader loaded: ', shaderId);
-      shader.lastVertStr = vertStr;
-      shader.lastFragStr = fragStr;
-      webGLPrograms[shaderId] = shader;
-    }
-    return shader;
-  }
-
-  updateCanvasSize(canvas) {
-    let dpr = devicePixelRatio;
-    if (retinaDisabled) {
-      dpr = Math.min(dpr, 1);
-    }
-    let w = canvas.offsetWidth * dpr;
-    let h = canvas.offsetHeight * dpr;
-    if (w !== canvas.width ||
-        h !== canvas.height) {
-      canvas.width = w;
-      canvas.height = h;
-    }
-
-    return { w, h, dpr };
-  }
-
-  setIgnoreClipRect(value) {
-    ignoreClipRect = value;
-  }
-
-  updateShaderAndSize(obj, shader, parentElement, clipElement = null) {
-    // TODO: This needs to be cleared after every frame!
-    if (true) { //currentShader !== shader || (clipElement !== currentClipElement && !ignoreClipRect)) {
-      currentShader = shader;
-      currentClipElement = clipElement;
-
-      let { w, h, dpr } = this.updateCanvasSize(this.canvas);
-      let ch = h;
-      let rect = parentElement.getBoundingClientRect();
-      if (rect.width && rect.height) {
-        this.viewport(rect.x * dpr, h - (rect.y + rect.height) * dpr, rect.width * dpr, rect.height * dpr);
-        obj.width = w = rect.width * dpr;
-        obj.height = h = rect.height * dpr;
-
-        this.bindFramebuffer(this.FRAMEBUFFER, null);
-        this.useProgram(shader);
-
-        shader.u.windowSize?.set(w, h);
-        shader.u.dpr?.set(dpr);
-      }
-
-      if (!ignoreClipRect) {
-        if (clipElement) {
-          let clipRect = clipElement.getBoundingClientRect();
-          this.scissor(clipRect.x * dpr,
-            ch - (clipRect.y + clipElement.clientHeight) * dpr,
-            clipElement.clientWidth * dpr,
-            clipElement.clientHeight * dpr);
-          this.enable(this.SCISSOR_TEST);
-        } else {
-          this.disable(this.SCISSOR_TEST);
-        }
-      }
-  
-      currentShaderSize = { w, h };
-      return w > 0 && h > 0;
-    } else {
-      let size = currentShaderSize;
-      obj.width = size.w;
-      obj.height = size.h;
-      return size.w > 0 && size.h > 0;
-    }
-  }
-
   getShader(str, shaderType, webGLVer) {
-    const sdr = this.createShader(shaderType);
-    if (~~webGLVer === 2) {      
-      this.shaderSource(sdr, '#version 300 es\n' + str);
+    const gl = this;
+    const sdr = gl.createShader(shaderType);
+    if (~~webGLVer === 2) {
+      gl.shaderSource(sdr, '#version 300 es\n' + str);
     } else {
-      this.shaderSource(sdr, str);
+      gl.shaderSource(sdr, str);
     }
-    this.compileShader(sdr);
-    if (!this.getShaderParameter(sdr, this.COMPILE_STATUS)) {
+    gl.compileShader(sdr);
+    if (!gl.getShaderParameter(sdr, gl.COMPILE_STATUS)) {
       const m = /ERROR: [\d]+:([\d]+): (.+)/gim.exec(
-        this.getShaderInfoLog(sdr)
+        gl.getShaderInfoLog(sdr)
       );
-      console.log(this.getShaderInfoLog(sdr));
+      console.log(gl.getShaderInfoLog(sdr));
       let lines = str.split("\n");
       let lineNr = ~~m[1] - 1;
       console.log(
@@ -225,41 +87,43 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
     return sdr;
   }
   getCompileInfo(str, shaderType, webGLVer) {
+    const gl = this;
     /** @type {WebGLProgramExt} */ // @ts-expect-error
-    const sdr = this.createShader(shaderType);
+    const sdr = gl.createShader(shaderType);
     if (~~webGLVer === 2) {
       str = '#version 300 es\n' + str
-    } 
-    this.shaderSource(sdr, str);
+    }
+    gl.shaderSource(sdr, str);
     let start = globalThis.performance.now();
-    this.compileShader(sdr);
+    gl.compileShader(sdr);
     let stop = globalThis.performance.now();
     let shaderLog = '';
-    let compileStatus = this.getShaderParameter(sdr, this.COMPILE_STATUS)
+    let compileStatus = gl.getShaderParameter(sdr, gl.COMPILE_STATUS)
     if(!compileStatus) {
-      shaderLog = this.getShaderInfoLog(sdr);
+      shaderLog = gl.getShaderInfoLog(sdr);
     }
     // let shaderSource = this.getShaderSource(sdr);
 
     return {
       compileStatus,
       compileTime: stop-start,
-      gl: this,
+      gl: gl,
       shader: sdr,
       shaderSource: str,
       shaderLog
     };
   }
   loadUniforms(shaderProgram) {
+    const gl = this;
     shaderProgram.u = {};
     shaderProgram.a = {};
-    const uniformCount = this.getProgramParameter(
+    const uniformCount = gl.getProgramParameter(
       shaderProgram,
-      this.ACTIVE_UNIFORMS
+      gl.ACTIVE_UNIFORMS
     );
     for (let i = 0; i < uniformCount; ++i) {
-      const uniformInfo = this.getActiveUniform(shaderProgram, i);
-      const uniformLoc = this.getUniformLocation(
+      const uniformInfo = gl.getActiveUniform(shaderProgram, i);
+      const uniformLoc = gl.getUniformLocation(
         shaderProgram,
         uniformInfo.name
       );
@@ -267,16 +131,16 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
       if (Object.hasOwnProperty.call(uniformSetters, uniformInfo.type)) {
         shaderProgram.u[uniformInfo.name].set = uniformSetters[
           uniformInfo.type
-        ](uniformLoc, this);
+        ](uniformLoc, gl);
       }
     }
-    const attribCount = this.getProgramParameter(
+    const attribCount = gl.getProgramParameter(
       shaderProgram,
-      this.ACTIVE_ATTRIBUTES
+      gl.ACTIVE_ATTRIBUTES
     );
     for (let i = 0; i < attribCount; ++i) {
-      const attribInfo = this.getActiveAttrib(shaderProgram, i);
-      const attribLoc = this.getAttribLocation(shaderProgram, attribInfo.name);
+      const attribInfo = gl.getActiveAttrib(shaderProgram, i);
+      const attribLoc = gl.getAttribLocation(shaderProgram, attribInfo.name);
 
       // eslint-disable-next-line no-new-wrappers
       shaderProgram.a[attribInfo.name] = new Number(attribLoc); // IT NEEDS TO BE A NUMBER OBJECT, I DO THAT ON PURPOSE
@@ -285,74 +149,78 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
           gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
           gl.vertexAttribPointer(AL, size, gl.FLOAT, false, 0, 0);
         };
-      })(this, attribLoc);
+      })(gl, attribLoc);
       shaderProgram.a[attribInfo.name].seti = (function(gl, AL) {
         return function(buffer, size) {
           gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
           gl.vertexAttribPointer(AL, size, gl.INT, false, 0, 0);
         };
-      })(this, attribLoc);
+      })(gl, attribLoc);
       shaderProgram.a[attribInfo.name].en = (function(gl, AL) {
         return function() {
           gl.enableVertexAttribArray(AL);
         };
-      })(this, attribLoc);
+      })(gl, attribLoc);
       shaderProgram.a[attribInfo.name].dis = (function(gl, AL) {
         return function() {
           gl.disableVertexAttribArray(AL);
         };
-      })(this, attribLoc);
+      })(gl, attribLoc);
     }
   }
   /**
-   * @param {string} vertexShader 
-   * @param {string} fragmentShader 
-   * @param {number} webGLVer 
+   * @param {string} vertexShader
+   * @param {string} fragmentShader
+   * @param {number} webGLVer
    * @returns {WebGLProgramExt}
    */
   getShaderProgram(vertexShader, fragmentShader, webGLVer) {
-    const shaderProgram = this.createProgram();
-    this.attachShader(
+    const gl = this;
+    const shaderProgram = gl.createProgram();
+    gl.attachShader(
       shaderProgram,
-      this.getShader(vertexShader, this.VERTEX_SHADER, webGLVer)
+      gl.getShader(vertexShader, gl.VERTEX_SHADER, webGLVer)
     );
-    this.attachShader(
+    gl.attachShader(
       shaderProgram,
-      this.getShader(fragmentShader, this.FRAGMENT_SHADER, webGLVer)
+      gl.getShader(fragmentShader, gl.FRAGMENT_SHADER, webGLVer)
     );
-    this.linkProgram(shaderProgram);
-    this.loadUniforms(shaderProgram);
+    gl.linkProgram(shaderProgram);
+    gl.loadUniforms(shaderProgram);
     // @ts-ignore
     return shaderProgram;
   }
   floatArray(data, dynamic) {
-    const b = this.createBuffer();
-    this.bindBuffer(this.ARRAY_BUFFER, b);
+    const gl = this;
+    const b = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, b);
     if (!(data instanceof Float32Array)) {
       data = new Float32Array(data);
     }
-    this.bufferData(
-      this.ARRAY_BUFFER,
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
       data,
-      dynamic ? this.DYNAMIC_DRAW : this.STATIC_DRAW
+      dynamic ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW
     );
     return b;
   }
   texParamNearestClamp(target) {
-    this.texParameteri(target, this.TEXTURE_MIN_FILTER, this.NEAREST);
-    this.texParameteri(target, this.TEXTURE_MAG_FILTER, this.NEAREST);
-    this.texParameteri(target, this.TEXTURE_WRAP_S, this.CLAMP_TO_EDGE);
-    this.texParameteri(target, this.TEXTURE_WRAP_T, this.CLAMP_TO_EDGE);
+    const gl = this;
+    gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(target, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(target, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   }
 
   /**
-   * 
+   *
    * @param {Float32Array} buffer - The buffer to create the texture with
    * @param {typeof defaultTextureInfo} textureInfo - Is filled with information for tracking the texture
    */
   deleteFloat32TextureBuffer(buffer, textureInfo = { ...defaultTextureInfo }) {
+    const gl = this;
     if (textureInfo.texture) {
-      this.deleteTexture(textureInfo.texture);
+      gl.deleteTexture(textureInfo.texture);
     }
     if (buffer) {
       // Can't dispose float32buffer, it's owne bij our caller anyway
@@ -366,6 +234,7 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
    * @param {typeof defaultTextureInfo} textureInfo - Is filled with information for tracking the texture
    */
   createOrUpdateFloat32TextureBuffer(buffer, textureInfo = { ...defaultTextureInfo }, firstChange = -1,lastChange= -1) {
+    const gl = this;
     let width = textureInfo.bufferWidth || 1024;
     // this.activeTexture(this.TEXTURE2);
     if (buffer.length % (4 * width) !== 0) {
@@ -383,115 +252,100 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
     let texture = textureInfo.texture;
     if (!texture || textureInfo.size !== size) {
       if (textureInfo.size>0) {
-        this.deleteTexture(texture);
+        gl.deleteTexture(texture);
       }
       textureInfo.size = size;
-      texture = textureInfo.texture = this.createTexture();
-      this.bindTexture(this.TEXTURE_2D, texture);
+      texture = textureInfo.texture = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, texture);
 
-      this.texImage2D(this.TEXTURE_2D, 0,
-        this.RGBA32F,
+      gl.texImage2D(gl.TEXTURE_2D, 0,
+        gl.RGBA32F,
         w, h, 0,
-        this.RGBA,
-        this.FLOAT, buffer);
+        gl.RGBA,
+        gl.FLOAT, buffer);
 
-      this.texParamNearestClamp(this.TEXTURE_2D);
+      gl.texParamNearestClamp(gl.TEXTURE_2D);
     } else {
-      this.bindTexture(this.TEXTURE_2D, texture);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
       if (firstChange !== -1 && lastChange !== -1) {
         let firstRow = ~~(firstChange / 4 / width);
         let lastRow = ~~((lastChange + (width*4-1)) / 4 / width);
 
-        this.texSubImage2D(this.TEXTURE_2D, 0, 0, firstRow, w, lastRow - firstRow,
-          this.RGBA, this.FLOAT, buffer, firstRow * width * 4);
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, firstRow, w, lastRow - firstRow,
+          gl.RGBA, gl.FLOAT, buffer, firstRow * width * 4);
 
       } else {
-        this.texSubImage2D(this.TEXTURE_2D, 0, 0, 0, w, h,
-          this.RGBA, this.FLOAT, buffer);
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, w, h,
+          gl.RGBA, gl.FLOAT, buffer);
       }
     }
     // this.activeTexture(this.TEXTURE0);
     return textureInfo
   }
   updateOrCreateFloatArray(b, data, copyLength) {
+    const gl = this;
     const doCreate = !b;
     if (doCreate) {
-      b = this.createBuffer();
+      b = gl.createBuffer();
     }
     if (!(data instanceof Float32Array)) {
       data = new Float32Array(data);
     }
-    this.bindBuffer(this.ARRAY_BUFFER, b);
+    gl.bindBuffer(gl.ARRAY_BUFFER, b);
     if (doCreate) {
-      this.bufferData(this.ARRAY_BUFFER, data, this.DYNAMIC_DRAW);
+      gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
     } else {
-      this.bufferSubData(this.ARRAY_BUFFER, 0, data, 0, copyLength || data.length);
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, data, 0, copyLength || data.length);
     }
     return b;
   }
   updateOrCreateInt32Array(b, data) {
+    const gl = this;
     const doCreate = !b
     if (doCreate) {
-      b = this.createBuffer()
+      b = gl.createBuffer()
     }
     if (!(data instanceof Int32Array)) {
       data = new Int32Array(data)
     }
-    this.bindBuffer(this.ARRAY_BUFFER, b)
-    if (doCreate) { 
-      this.bufferData(this.ARRAY_BUFFER, data, this.DYNAMIC_DRAW) 
-    } else { 
-      this.bufferSubData(this.ARRAY_BUFFER, 0, data) 
+    gl.bindBuffer(gl.ARRAY_BUFFER, b)
+    if (doCreate) {
+      gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW)
+    } else {
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, data)
     }
     return b
   }
   updateOrCreateUInt32ElementArray(b, data) {
+    const gl = this;
     const doCreate = !b
     if (doCreate) {
-      b = this.createBuffer()
+      b = gl.createBuffer()
     }
     if (!(data instanceof Uint32Array)) {
       data = new Uint32Array(data)
     }
-    this.bindBuffer(this.ELEMENT_ARRAY_BUFFER, b)
-    if (doCreate) { 
-      this.bufferData(this.ELEMENT_ARRAY_BUFFER, data, this.DYNAMIC_DRAW) 
-    } else { 
-      this.bufferSubData(this.ELEMENT_ARRAY_BUFFER, 0, data) 
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, b)
+    if (doCreate) {
+      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.DYNAMIC_DRAW)
+    } else {
+      gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, 0, data)
     }
     return b
   }
   staticElementArray(data) {
-    const b = this.createBuffer();
+    const gl = this;
+    const b = gl.createBuffer();
     if (!(data instanceof Uint16Array)) {
       data = new Uint16Array(data);
     }
-    this.bindBuffer(this.ELEMENT_ARRAY_BUFFER, b);
-    this.bufferData(
-      this.ELEMENT_ARRAY_BUFFER,
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, b);
+    gl.bufferData(
+      gl.ELEMENT_ARRAY_BUFFER,
       new Uint16Array(data),
-      this.STATIC_DRAW
+      gl.STATIC_DRAW
     );
     return b;
-  }
-  /**
-   * Makes an int array GL buffer with 1,2,3, etc because Vertex_ID is unstable on Mac (Retina 5K, Late 2015) AMD Radeon R9 M395X 4 GB
-   * I use this as a vertex buffer to circumvent that problem
-   * @returns {WebGLBuffer} 
-   */
-  getVertex_IDWorkaroundBuffer() {
-    if (!vertexIDWorkaroundBuffer) {
-      const maxVertexID = 1024 * 1024 * 4;
-      let data = new Float32Array(maxVertexID); // Can't get Int to work on my mac :( Vertex shader input type does not match the type of the bound vertex attribute. int
-  
-      for (let ix = 0; ix < maxVertexID; ix++) {
-        data[ix] = ix;
-      }
-      vertexIDWorkaroundBuffer = this.createBuffer();
-      this.bindBuffer(this.ARRAY_BUFFER, vertexIDWorkaroundBuffer)
-      this.bufferData(this.ARRAY_BUFFER, data, this.STATIC_READ);
-    }
-    return vertexIDWorkaroundBuffer;
   }
   loadCanvas(canvas, texNum) {
     const gl = this;
@@ -594,8 +448,8 @@ function AddUtilsToContext(ctx) {
 
 /**
  * Get's a webgl(2) context extended with utilities
- * @param {HTMLCanvasElement} canvas 
- * @param {WebGLContextAttributes} options 
+ * @param {HTMLCanvasElement} canvas
+ * @param {WebGLContextAttributes} options
  * @returns {RenderingContextWithUtils}
  */
 export default function getWebGLContext(canvas, options = null) {
