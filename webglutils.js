@@ -129,9 +129,13 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
       );
       shaderProgram.u[uniformInfo.name] = uniformLoc;
       if (Object.hasOwnProperty.call(uniformSetters, uniformInfo.type)) {
-        shaderProgram.u[uniformInfo.name].set = uniformSetters[
-          uniformInfo.type
-        ](uniformLoc, gl);
+        if (!shaderProgram.u[uniformInfo.name]) {
+          console.log('Error generatating uniform setter for: ', uniformInfo.name);
+        } else {
+          shaderProgram.u[uniformInfo.name].set = uniformSetters[
+            uniformInfo.type
+          ](uniformLoc, gl);
+        }
       }
     }
     const attribCount = gl.getProgramParameter(
@@ -145,7 +149,7 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
       // eslint-disable-next-line no-new-wrappers
       shaderProgram.a[attribInfo.name] = new Number(attribLoc); // IT NEEDS TO BE A NUMBER OBJECT, I DO THAT ON PURPOSE
       if (!shaderProgram.a[attribInfo.name]) {
-        console.log('Error generatating setter for: ', attribInfo.name);
+        console.log('Error generatating attribute setter for: ', attribInfo.name);
       } else {
         shaderProgram.a[attribInfo.name].set = (function (gl, AL) {
           return function (buffer, size) {
