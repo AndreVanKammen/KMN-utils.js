@@ -144,28 +144,32 @@ export class RenderingContextWithUtils extends WebGL2RenderingContext {
 
       // eslint-disable-next-line no-new-wrappers
       shaderProgram.a[attribInfo.name] = new Number(attribLoc); // IT NEEDS TO BE A NUMBER OBJECT, I DO THAT ON PURPOSE
-      shaderProgram.a[attribInfo.name].set = (function(gl, AL) {
-        return function(buffer, size) {
-          gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-          gl.vertexAttribPointer(AL, size, gl.FLOAT, false, 0, 0);
-        };
-      })(gl, attribLoc);
-      shaderProgram.a[attribInfo.name].seti = (function(gl, AL) {
-        return function(buffer, size) {
-          gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-          gl.vertexAttribPointer(AL, size, gl.INT, false, 0, 0);
-        };
-      })(gl, attribLoc);
-      shaderProgram.a[attribInfo.name].en = (function(gl, AL) {
-        return function() {
-          gl.enableVertexAttribArray(AL);
-        };
-      })(gl, attribLoc);
-      shaderProgram.a[attribInfo.name].dis = (function(gl, AL) {
-        return function() {
-          gl.disableVertexAttribArray(AL);
-        };
-      })(gl, attribLoc);
+      if (!shaderProgram.a[attribInfo.name]) {
+        console.log('Error generatating setter for: ', attribInfo.name);
+      } else {
+        shaderProgram.a[attribInfo.name].set = (function (gl, AL) {
+          return function (buffer, size) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            gl.vertexAttribPointer(AL, size, gl.FLOAT, false, 0, 0);
+          };
+        })(gl, attribLoc);
+        shaderProgram.a[attribInfo.name].seti = (function (gl, AL) {
+          return function (buffer, size) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            gl.vertexAttribPointer(AL, size, gl.INT, false, 0, 0);
+          };
+        })(gl, attribLoc);
+        shaderProgram.a[attribInfo.name].en = (function (gl, AL) {
+          return function () {
+            gl.enableVertexAttribArray(AL);
+          };
+        })(gl, attribLoc);
+        shaderProgram.a[attribInfo.name].dis = (function (gl, AL) {
+          return function () {
+            gl.disableVertexAttribArray(AL);
+          };
+        })(gl, attribLoc);
+      }
     }
   }
   /**
