@@ -461,7 +461,18 @@ function AddUtilsToContext(ctx) {
  * @returns {RenderingContextWithUtils}
  */
 export default function getWebGLContext(canvas, options = null) {
-  const opt = options || { alpha: false };
+  const opt = {
+    alpha: false,
+    antialias: false,
+    depth: false,
+    desynchronized: true,
+    failIfMajorPerformanceCaveat: false,
+    powerPreference: "high-performance",
+    premultipliedAlpha: false,
+    preserveDrawingBuffer: false,
+    stencil: false,
+     ...options
+  };
   let glCtx;
   const contextNames = [
     "webgl2",
@@ -471,6 +482,7 @@ export default function getWebGLContext(canvas, options = null) {
     "webkit-3d",
     "moz-webgl"
   ];
+  console.log('Webgl options:', opt);
   for (let i = 0; i < contextNames.length; i++) {
     glCtx = canvas.getContext(contextNames[i], opt);
     if (glCtx) {
