@@ -482,7 +482,7 @@ export default function getWebGLContext(canvas, options = null) {
     "webkit-3d",
     "moz-webgl"
   ];
-  console.log('Webgl options:', opt);
+  // console.log('Webgl options:', opt);
   for (let i = 0; i < contextNames.length; i++) {
     glCtx = canvas.getContext(contextNames[i], opt);
     if (glCtx) {
